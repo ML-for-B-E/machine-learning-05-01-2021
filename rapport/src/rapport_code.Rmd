@@ -1,0 +1,127 @@
+---
+title: "Analyse des retours des participants"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+knitr::opts_knit$set(root.dir = 'C:/Users/whax/Dropbox/benin_excellence/machine-learning-05-01-2021/rapport')
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Répartition des réponses
+
+```{r fig.width=15, fig.height=10}
+library(pacman)
+p_load("data.table")
+p_load("readxl")
+p_load("tidyr")
+p_load("dplyr")
+p_load("magrittr")
+library("wordcloud")
+p_load("ggplot2")
+library(viridis)
+library(hrbrthemes)
+
+ref = read_excel(file.path("data","feedback.xlsx"),sheet = "questions",col_types = "text")
+reponses_all = read_excel(file.path("data","feedback.xlsx"),sheet = "reponse",col_types = "text")
+
+reponses_all[,"ID"]=as.character(seq(1,dim(reponses_all)[1]))
+
+reponses = reponses_all %>% select(-c(`1`,`2`,`8`,`10`,`11`,ID,`12`,`16`,`19`)) %>%
+  setnames(.,
+           old=as.character(unique(ref$`N°`)),
+           new=unique(ref$Variables),skip_absent = TRUE)
+
+mod_func = function(x){
+  vect = unlist(strsplit(x,"_"))
+  data.table(prop.table(table(vect[!is.na(vect)])))
+}
+
+test = lapply(reponses,FUN = mod_func)
+
+for(name in names(test))
+  {
+  temp = test[[name]]
+  
+  temp[,'question'] = name
+  
+  temp %<>% left_join(.,y=ref,by=c("question"="Variables","V1"="N° réponse"))
+  
+  test[[name]] = temp
+}
+test = data.table(rbindlist(test))
+
+
+ggplot(test, aes(fill=Modalites, x=N, y=Modalites)) + 
+  geom_bar(position="dodge", stat="identity") +
+  scale_fill_viridis(discrete = T, option = "E") +
+  facet_wrap(~question,scales = "free") +
+  theme(legend.position="none") +
+  xlab("") + ylab("") 
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### thèmes utiles
+
+```{r}
+
+reponses =reponses_all %>% select(c(`8`)) %>%
+  setnames(.,
+           old=as.character(unique(ref$`N°`)),
+           new=unique(ref$Variables),skip_absent = TRUE)
+
+test = lapply(reponses,FUN = mod_func)
+for(name in names(test))
+{
+  temp = test[[name]]
+  
+  temp[,'question'] = name
+  
+  temp %<>% left_join(.,y=ref,by=c("question"="Variables","V1"="N° réponse"))
+  
+  test[[name]] = temp
+}
+test = data.table(rbindlist(test))
+
+wordcloud(words = test$Modalites, freq = test$N, min.freq = 0,scale=c(3,.5),
+          max.words=200, random.order=FALSE, rot.per=0.4, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+### thèmes à développer plus amplement
+
+```{r}
+
+reponses =reponses_all %>% select(c(`10`)) %>%
+  setnames(.,
+           old=as.character(unique(ref$`N°`)),
+           new=unique(ref$Variables),skip_absent = TRUE)
+
+test = lapply(reponses,FUN = mod_func)
+for(name in names(test))
+{
+  temp = test[[name]]
+  
+  temp[,'question'] = name
+  
+  temp %<>% left_join(.,y=ref,by=c("question"="Variables","V1"="N° réponse"))
+  
+  test[[name]] = temp
+}
+test = data.table(rbindlist(test))
+
+wordcloud(words = test$Modalites, freq = test$N, min.freq = 0,scale=c(3,.5),
+          max.words=200, random.order=FALSE, rot.per=0.4, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
